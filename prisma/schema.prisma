@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum TransactionType {
+  NEW_ISSUANCE
+  RENEWAL
+  UPGRADE
+}
+
+enum PartnerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model AdminUser {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+
+  @@map("admin_users")
+}
+
+model AlliancePartner {
+  id           String               @id @default(cuid())
+  name         String               @unique
+  contactEmail String
+  phone        String?
+  region       String
+  status       PartnerStatus        @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  clients      Client[]
+  transactions LicenseTransaction[]
+
+  @@map("alliance_partners")
+}
+
+model SoftwareModule {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  basePrice   Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  licenses    License[]
+
+  @@map("software_modules")
+}
+
+model Client {
+  id                String           @id @default(cuid())
+  businessName      String
+  contactEmail      String
+  phone             String?
+  region            String?
+  alliancePartnerId String?
+  alliancePartner   AlliancePartner? @relation(fields: [alliancePartnerId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+  licenses          License[]
+
+  @@map("clients")
+}
+
+model License {
+  id               String              @id @default(cuid())
+  clientId         String
+  client           Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  softwareModuleId String
+  softwareModule   SoftwareModule      @relation(fields: [softwareModuleId], references: [id], onDelete: Restrict)
+  status           LicenseStatus       @default(ACTIVE)
+  validFrom        DateTime            @default(now())
+  expiresAt        DateTime
+  lastHeartbeatAt  DateTime?
+  transactions     LicenseTransaction[]
+
+  @@unique([clientId, softwareModuleId])
+  @@map("licenses")
+}
+
+model LicenseTransaction {
+  id                String           @id @default(cuid())
+  licenseId         String
+  license           License          @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  transactionType   TransactionType
+  amountPaid        Float
+  basePriceAtTime   Float
+  validFrom         DateTime
+  validUntil        DateTime
+  alliancePartnerId String?
+  alliancePartner   AlliancePartner? @relation(fields: [alliancePartnerId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+
+  @@map("license_transactions")
+}
