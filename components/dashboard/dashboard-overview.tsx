@@ -2,22 +2,19 @@
 
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { GenerateLicenseTrigger } from "@/components/dashboard/generate-license-trigger";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { useDashboardMetricsQuery } from "@/lib/hooks/use-dashboard-metrics";
 
 export function DashboardOverview() {
   const { data, isLoading } = useDashboardMetricsQuery();
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-          <p className="text-zinc-500">
-            Nixlor Super Admin license generation hub
-          </p>
-        </div>
-        <GenerateLicenseTrigger />
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Overview"
+        description="Nixlor Super Admin license generation hub"
+        action={<GenerateLicenseTrigger />}
+      />
 
       <StatsCards
         activeClients={data?.activeClients ?? 0}

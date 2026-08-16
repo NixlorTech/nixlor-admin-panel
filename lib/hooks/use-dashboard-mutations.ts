@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -55,6 +56,7 @@ type GenerateLicenseInput = {
   softwareModuleId: string;
   durationInDays: number;
   customPrice: number;
+  commissionRate?: number;
 };
 
 export function useGenerateLicenseMutation() {
@@ -71,6 +73,7 @@ export function useGenerateLicenseMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.metrics }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.partners.all }),
       ]);
     },
   });
@@ -136,6 +139,87 @@ export function useCreateModuleMutation() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.modules.all });
+    },
+  });
+}
+
+type CreateUserInput = {
+  email: string;
+  password: string;
+  name?: string;
+  roleId: string;
+};
+
+export function useCreateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateUserInput) =>
+      fetchJson("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  });
+}
+
+type UpdateUserInput = {
+  id: string;
+  email?: string;
+  password?: string;
+  name?: string;
+  roleId?: string;
+  isActive?: boolean;
+};
+
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...input }: UpdateUserInput) =>
+      fetchJson(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  });
+}
+
+export function useDeactivateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchJson(`/api/users/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  });
+}
+
+export function useResetHardwareMutation() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (licenseId: string) =>
+      fetchJson(`/api/licenses/${licenseId}/hardware`, {
+        method: "PATCH",
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.partners.all }),
+      ]);
+      router.refresh();
     },
   });
 }

@@ -6,7 +6,9 @@ import {
   serializeLicense,
 } from "@/lib/dashboard";
 import { BillingHistoryTable } from "@/components/dashboard/billing-history-table";
+import { ClientLicensesTable } from "@/components/dashboard/client-licenses-table";
 import { GenerateLicenseTrigger } from "@/components/dashboard/generate-license-trigger";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -34,25 +36,23 @@ export default async function ClientDetailPage({
   const activeModules = getActiveModules(licenses);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-zinc-500">
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        eyebrow={
+          <>
             <Link href="/dashboard/clients" className="hover:underline">
               Clients
             </Link>
             {" / "}
             {client.businessName}
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {client.businessName}
-          </h1>
-          <p className="text-zinc-500">{client.contactEmail}</p>
-        </div>
-        <GenerateLicenseTrigger />
-      </div>
+          </>
+        }
+        title={client.businessName}
+        description={client.contactEmail}
+        action={<GenerateLicenseTrigger />}
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">License Status</CardTitle>
@@ -93,7 +93,7 @@ export default async function ClientDetailPage({
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="sm:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Region</CardTitle>
           </CardHeader>
@@ -103,7 +103,19 @@ export default async function ClientDetailPage({
 
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold">Billing & Renewal History</h2>
+          <h2 className="text-lg font-semibold sm:text-xl">Active Licenses</h2>
+          <p className="text-sm text-zinc-500">
+            Hardware-locked deployments and on-premises heartbeat status
+          </p>
+        </div>
+        <ClientLicensesTable licenses={licenses} />
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold sm:text-xl">
+            Billing & Renewal History
+          </h2>
           <p className="text-sm text-zinc-500">
             Append-only ledger of all license issuances and renewals
           </p>

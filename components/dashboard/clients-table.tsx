@@ -39,6 +39,7 @@ import {
 } from "@/lib/license-status";
 import { TablePagination } from "@/components/dashboard/table-pagination";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { TableContainer } from "@/components/dashboard/table-container";
 import { useRevokeLicenseMutation } from "@/lib/hooks/use-dashboard-mutations";
 
 type ClientsTableProps = {
@@ -193,7 +194,7 @@ function ClientsTableComponent({
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
+      <div className="relative w-full max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
         <Input
           placeholder="Search clients..."
@@ -206,8 +207,8 @@ function ClientsTableComponent({
       {isLoading ? (
         <TableSkeleton rows={pagination.pageSize} columns={6} />
       ) : (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800">
-          <Table>
+        <TableContainer>
+          <Table className="min-w-[900px]">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -258,7 +259,7 @@ function ClientsTableComponent({
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableContainer>
       )}
 
       <TablePagination

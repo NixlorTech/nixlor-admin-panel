@@ -2,6 +2,7 @@
 
 import type { LicenseTransactionRecord } from "@/lib/domain-types";
 import { Badge } from "@/components/ui/badge";
+import { TableContainer } from "@/components/dashboard/table-container";
 import {
   Table,
   TableBody,
@@ -53,8 +54,8 @@ export function BillingHistoryTable({
   transactions: LicenseTransactionRecord[];
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800">
-      <Table>
+    <TableContainer>
+      <Table className="min-w-[900px]">
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
@@ -106,6 +107,6 @@ export function BillingHistoryTable({
           )}
         </TableBody>
       </Table>
-    </div>
+    </TableContainer>
   );
 }

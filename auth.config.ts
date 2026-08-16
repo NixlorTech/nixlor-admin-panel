@@ -24,15 +24,25 @@ export const authConfig = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
+        token.permissions = user.permissions;
       }
+
+      if (trigger === "update" && session?.user) {
+        token.role = session.user.role;
+        token.permissions = session.user.permissions;
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.permissions = (token.permissions as string[]) ?? [];
       }
       return session;
     },

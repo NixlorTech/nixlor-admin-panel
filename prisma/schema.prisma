@@ -24,10 +24,51 @@ enum PartnerStatus {
   INACTIVE
 }
 
+model AdminRole {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  description String?
+  isSystem    Boolean          @default(false)
+  users       AdminUser[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("admin_roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  description String?
+  group       String
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         AdminRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
 model AdminUser {
-  id           String @id @default(cuid())
-  email        String @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
+  name         String?
+  isActive     Boolean   @default(true)
+  roleId       String
+  role         AdminRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   @@map("admin_users")
 }
@@ -74,15 +115,17 @@ model Client {
 }
 
 model License {
-  id               String              @id @default(cuid())
+  id               String               @id @default(cuid())
   clientId         String
-  client           Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client           Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
   softwareModuleId String
-  softwareModule   SoftwareModule      @relation(fields: [softwareModuleId], references: [id], onDelete: Restrict)
-  status           LicenseStatus       @default(ACTIVE)
-  validFrom        DateTime            @default(now())
+  softwareModule   SoftwareModule       @relation(fields: [softwareModuleId], references: [id], onDelete: Restrict)
+  status           LicenseStatus        @default(ACTIVE)
+  validFrom        DateTime             @default(now())
   expiresAt        DateTime
   lastHeartbeatAt  DateTime?
+  hardwareId       String?
+  latestTokenId    String?
   transactions     LicenseTransaction[]
 
   @@unique([clientId, softwareModuleId])
@@ -96,6 +139,8 @@ model LicenseTransaction {
   transactionType   TransactionType
   amountPaid        Float
   basePriceAtTime   Float
+  commissionRate    Float?
+  commissionAmount  Float?
   validFrom         DateTime
   validUntil        DateTime
   alliancePartnerId String?

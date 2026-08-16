@@ -31,6 +31,7 @@ export type AlliancePartnerRecord = {
   region: string;
   status: PartnerStatus;
   totalRevenue: number;
+  pendingCommissions: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -42,6 +43,8 @@ export type LicenseTransactionRecord = {
   transactionType: TransactionType;
   amountPaid: number;
   basePriceAtTime: number;
+  commissionRate: number | null;
+  commissionAmount: number | null;
   alliancePartnerId: string | null;
   alliancePartnerName: string | null;
   validFrom: string;
@@ -58,6 +61,8 @@ export type LicenseRecord = {
   validFrom: string;
   expiresAt: string;
   lastHeartbeatAt: string | null;
+  hardwareId: string | null;
+  latestTokenId: string | null;
   transactions: LicenseTransactionRecord[];
 };
 
@@ -71,4 +76,37 @@ export type ClientRecord = {
   alliancePartnerName: string | null;
   createdAt: string;
   licenses: LicenseRecord[];
+};
+
+export type PermissionRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  group: string;
+};
+
+export type AdminRoleRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  permissions: PermissionRecord[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserRecord = {
+  id: string;
+  email: string;
+  name: string | null;
+  isActive: boolean;
+  role: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 };

@@ -49,6 +49,7 @@ export function GenerateLicenseModal() {
   const [alliancePartnerId, setAlliancePartnerId] = useState("");
   const [softwareModuleId, setSoftwareModuleId] = useState("");
   const [customPrice, setCustomPrice] = useState("");
+  const [commissionRate, setCommissionRate] = useState("20");
   const [durationInDays, setDurationInDays] = useState("365");
   const [selectedPreset, setSelectedPreset] = useState<number | null>(365);
   const [generatedToken, setGeneratedToken] = useState("");
@@ -107,6 +108,7 @@ export function GenerateLicenseModal() {
     setAlliancePartnerId("");
     setSoftwareModuleId("");
     setCustomPrice("");
+    setCommissionRate("20");
     setDurationInDays("365");
     setSelectedPreset(365);
     setGeneratedToken("");
@@ -146,11 +148,17 @@ export function GenerateLicenseModal() {
         throw new Error("Final invoiced price must be a non-negative number");
       }
 
+      const rate = Number(commissionRate);
+      if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+        throw new Error("Commission rate must be between 0 and 100");
+      }
+
       const payload = await generateLicenseMutation.mutateAsync({
         clientId: targetClientId,
         softwareModuleId,
         durationInDays: duration,
         customPrice: price,
+        commissionRate: rate,
       });
 
       setGeneratedToken(payload.token);
@@ -161,6 +169,7 @@ export function GenerateLicenseModal() {
     alliancePartnerId,
     businessName,
     clientId,
+    commissionRate,
     contactEmail,
     createClientMutation,
     customPrice,
@@ -191,7 +200,7 @@ export function GenerateLicenseModal() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>Generate License</Button>
+        <Button className="w-full sm:w-auto">Generate License</Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -203,7 +212,7 @@ export function GenerateLicenseModal() {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
               type="button"
               variant={mode === "existing" ? "default" : "outline"}
@@ -356,6 +365,22 @@ export function GenerateLicenseModal() {
                   apply a discount or upcharge.
                 </p>
               ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+              <Input
+                id="commissionRate"
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={commissionRate}
+                onChange={(event) => setCommissionRate(event.target.value)}
+              />
+              <p className="text-xs text-zinc-500">
+                Applied when the client has an alliance partner assigned. Defaults
+                to 20%.
+              </p>
             </div>
             <div className="space-y-3 md:col-span-2">
               <Label>License Duration</Label>

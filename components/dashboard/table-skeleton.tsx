@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { TableContainer } from "@/components/dashboard/table-container";
 
 type TableSkeletonProps = {
   rows?: number;
@@ -9,7 +10,7 @@ type TableSkeletonProps = {
 
 function TableSkeletonComponent({ rows = 5, columns = 5 }: TableSkeletonProps) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800">
+    <TableContainer>
       <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div
@@ -26,7 +27,7 @@ function TableSkeletonComponent({ rows = 5, columns = 5 }: TableSkeletonProps) {
           </div>
         ))}
       </div>
-    </div>
+    </TableContainer>
   );
 }
 

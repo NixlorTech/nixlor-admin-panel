@@ -90,10 +90,18 @@ export async function getSoftwareModules() {
 }
 
 export async function getAlliancePartners() {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
   const partners = await prisma.alliancePartner.findMany({
     include: {
       transactions: {
-        select: { amountPaid: true },
+        select: {
+          amountPaid: true,
+          commissionAmount: true,
+          createdAt: true,
+        },
       },
     },
     orderBy: { name: "asc" },
@@ -110,6 +118,13 @@ export async function getAlliancePartners() {
       (sum, transaction) => sum + transaction.amountPaid,
       0,
     ),
+    pendingCommissions: partner.transactions
+      .filter(
+        (transaction) =>
+          transaction.createdAt >= startOfMonth &&
+          transaction.createdAt <= endOfMonth,
+      )
+      .reduce((sum, transaction) => sum + (transaction.commissionAmount ?? 0), 0),
     createdAt: partner.createdAt,
     updatedAt: partner.updatedAt,
   }));
@@ -136,6 +151,8 @@ export function serializeTransaction(
     transactionType: transaction.transactionType,
     amountPaid: transaction.amountPaid,
     basePriceAtTime: transaction.basePriceAtTime,
+    commissionRate: transaction.commissionRate,
+    commissionAmount: transaction.commissionAmount,
     alliancePartnerId: transaction.alliancePartnerId,
     alliancePartnerName: transaction.alliancePartner?.name ?? null,
     validFrom: transaction.validFrom.toISOString(),
@@ -158,6 +175,8 @@ export function serializeLicense(
     validFrom: license.validFrom.toISOString(),
     expiresAt: license.expiresAt.toISOString(),
     lastHeartbeatAt: license.lastHeartbeatAt?.toISOString() ?? null,
+    hardwareId: license.hardwareId,
+    latestTokenId: license.latestTokenId,
     transactions: license.transactions.map((transaction) =>
       serializeTransaction(transaction, license.softwareModule.name),
     ),

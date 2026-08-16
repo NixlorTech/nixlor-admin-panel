@@ -1,10 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ClientsTable } from "@/components/dashboard/clients-table";
-import { GenerateLicenseTrigger } from "@/components/dashboard/generate-license-trigger";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { useClientsQuery } from "@/lib/hooks/use-clients";
 import { usePaginationState } from "@/lib/hooks/use-pagination";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+
+const GenerateLicenseTrigger = dynamic(
+  () =>
+    import("@/components/dashboard/generate-license-trigger").then(
+      (module) => module.GenerateLicenseTrigger,
+    ),
+  {
+    loading: () => (
+      <div className="h-10 w-full animate-pulse rounded-md bg-zinc-200 sm:w-36 dark:bg-zinc-800" />
+    ),
+    ssr: false,
+  },
+);
 
 export function ClientsPageContent() {
   const { page, setPage, search, setSearch, query } = usePaginationState();
@@ -18,16 +32,12 @@ export function ClientsPageContent() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-          <p className="text-zinc-500">
-            Search, sort, and manage onboarded client licenses
-          </p>
-        </div>
-        <GenerateLicenseTrigger />
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Clients"
+        description="Search, sort, and manage onboarded client licenses"
+        action={<GenerateLicenseTrigger />}
+      />
 
       <ClientsTable
         clients={data?.data ?? []}

@@ -209,7 +209,7 @@ export function PartnerFormModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Add Partner
           </Button>

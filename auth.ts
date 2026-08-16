@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { authConfig } from "@/auth.config";
-import { isValidAdminEmail } from "@/lib/utils";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -21,17 +20,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        if (!isValidAdminEmail(email)) {
-          return null;
-        }
-
         const { prisma } = await import("@/lib/prisma");
 
         const admin = await prisma.adminUser.findUnique({
           where: { email },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
-        if (!admin) {
+        if (!admin || !admin.isActive) {
           return null;
         }
 
@@ -43,6 +49,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: admin.id,
           email: admin.email,
+          name: admin.name ?? admin.email,
+          role: admin.role.slug,
+          permissions: admin.role.permissions.map(
+            (entry) => entry.permission.slug,
+          ),
         };
       },
     }),

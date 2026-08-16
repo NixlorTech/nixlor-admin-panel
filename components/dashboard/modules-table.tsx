@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/dashboard/table-pagination";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { TableContainer } from "@/components/dashboard/table-container";
 
 type ModulesTableProps = {
   modules: SoftwareModuleRecord[];
@@ -103,7 +104,7 @@ function ModulesTableComponent({
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
+      <div className="relative w-full max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
         <Input
           placeholder="Search modules..."
@@ -116,8 +117,8 @@ function ModulesTableComponent({
       {isLoading ? (
         <TableSkeleton rows={pagination.pageSize} columns={4} />
       ) : (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800">
-          <Table>
+        <TableContainer>
+          <Table className="min-w-[640px]">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -168,7 +169,7 @@ function ModulesTableComponent({
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableContainer>
       )}
 
       <TablePagination

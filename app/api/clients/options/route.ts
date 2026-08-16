@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/permissions";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.CLIENTS_READ);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   const clients = await prisma.client.findMany({

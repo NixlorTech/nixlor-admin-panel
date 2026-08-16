@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { PartnerStatus } from "@/lib/generated/prisma/client";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/permissions";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +18,9 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.PARTNERS_WRITE);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   const { id } = await context.params;

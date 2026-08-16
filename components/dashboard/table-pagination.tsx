@@ -21,12 +21,12 @@ function TablePaginationComponent({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between gap-4 px-1 py-2">
-      <p className="text-sm text-zinc-500">
+    <div className="flex flex-col gap-3 px-1 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <p className="text-center text-sm text-zinc-500 sm:text-left">
         Showing {start}–{end} of {total}
         {isFetching ? " · Updating..." : ""}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -34,7 +34,7 @@ function TablePaginationComponent({
           disabled={page <= 1 || isFetching}
         >
           <ChevronLeft className="h-4 w-4" />
-          Previous
+          <span className="hidden sm:inline">Previous</span>
         </Button>
         <span className="text-sm text-zinc-600">
           Page {page} of {totalPages}
@@ -45,7 +45,7 @@ function TablePaginationComponent({
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages || isFetching}
         >
-          Next
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

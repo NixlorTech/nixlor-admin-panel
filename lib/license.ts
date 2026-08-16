@@ -12,6 +12,7 @@ export function signLicenseToken(params: {
   clientId: string;
   module: string;
   expiresAt: Date;
+  jti: string;
 }): string {
   const privateKey = getPrivateKey();
   const exp = Math.floor(params.expiresAt.getTime() / 1000);
@@ -20,9 +21,10 @@ export function signLicenseToken(params: {
     {
       clientId: params.clientId,
       module: params.module,
+      jti: params.jti,
       exp,
     },
     privateKey,
-    { algorithm: "RS256" },
+    { algorithm: "RS256", jwtid: params.jti },
   );
 }

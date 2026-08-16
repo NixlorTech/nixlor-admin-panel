@@ -1,30 +1,46 @@
-import { NextResponse } from "next/server";
 import { LicenseStatus } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  getNextPingJitter,
+  HEARTBEAT_WRITE_INTERVAL_MS,
+} from "@/lib/license-constants";
+import { heartbeatJsonResponse } from "@/lib/heartbeat-response";
 
 export const dynamic = "force-dynamic";
 
 type HeartbeatBody = {
   clientId: string;
   module: string;
+  hardwareId: string;
 };
+
+function shouldWriteHeartbeat(lastHeartbeatAt: Date | null, now: Date) {
+  if (!lastHeartbeatAt) {
+    return true;
+  }
+
+  return now.getTime() - lastHeartbeatAt.getTime() >= HEARTBEAT_WRITE_INTERVAL_MS;
+}
 
 export async function POST(request: Request) {
   let body: HeartbeatBody;
   try {
     body = (await request.json()) as HeartbeatBody;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return heartbeatJsonResponse({ error: "Invalid JSON body" }, 400);
   }
 
-  const { clientId, module } = body;
+  const { clientId, module, hardwareId } = body;
 
-  if (!clientId || !module) {
-    return NextResponse.json(
-      { error: "clientId and module are required" },
-      { status: 400 },
+  if (!clientId || !module || !hardwareId?.trim()) {
+    return heartbeatJsonResponse(
+      { error: "clientId, module, and hardwareId are required" },
+      400,
     );
   }
+
+  const normalizedHardwareId = hardwareId.trim();
+  const nextPingJitter = getNextPingJitter();
 
   const license = await prisma.license.findFirst({
     where: {
@@ -39,7 +55,7 @@ export async function POST(request: Request) {
   });
 
   if (!license) {
-    return NextResponse.json({ status: "REVOKED" }, { status: 403 });
+    return heartbeatJsonResponse({ status: "REVOKED", nextPingJitter }, 403);
   }
 
   const now = new Date();
@@ -53,20 +69,39 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ status: "REVOKED" }, { status: 403 });
+    return heartbeatJsonResponse({ status: "REVOKED", nextPingJitter }, 403);
   }
 
-  const updated = await prisma.license.update({
-    where: { id: license.id },
-    data: { lastHeartbeatAt: now },
-    include: {
-      softwareModule: true,
-    },
-  });
+  if (license.hardwareId && license.hardwareId !== normalizedHardwareId) {
+    return heartbeatJsonResponse(
+      { error: "HARDWARE_MISMATCH", nextPingJitter },
+      403,
+    );
+  }
 
-  return NextResponse.json({
+  const needsHardwareLock = !license.hardwareId;
+  const needsHeartbeatWrite = shouldWriteHeartbeat(license.lastHeartbeatAt, now);
+
+  let updatedLicense = license;
+
+  if (needsHardwareLock || needsHeartbeatWrite) {
+    updatedLicense = await prisma.license.update({
+      where: { id: license.id },
+      data: {
+        ...(needsHardwareLock ? { hardwareId: normalizedHardwareId } : {}),
+        ...(needsHeartbeatWrite ? { lastHeartbeatAt: now } : {}),
+      },
+      include: {
+        softwareModule: true,
+      },
+    });
+  }
+
+  return heartbeatJsonResponse({
     status: "ACTIVE",
-    expiresAt: updated.expiresAt.toISOString(),
-    module: updated.softwareModule.name,
+    expiresAt: updatedLicense.expiresAt.toISOString(),
+    module: updatedLicense.softwareModule.name,
+    hardwareLocked: Boolean(updatedLicense.hardwareId),
+    nextPingJitter,
   });
 }

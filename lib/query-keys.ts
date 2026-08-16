@@ -23,4 +23,12 @@ export const queryKeys = {
       ["modules", "list", params] as const,
     active: ["modules", "active"] as const,
   },
+  users: {
+    all: ["users"] as const,
+    list: (params: PaginationQuery) => ["users", "list", params] as const,
+  },
+  roles: {
+    all: ["roles"] as const,
+    list: ["roles", "list"] as const,
+  },
 } as const;

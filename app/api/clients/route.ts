@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   buildPaginatedResponse,
   parsePaginationSearchParams,
 } from "@/lib/pagination";
 import { serializeClient } from "@/lib/dashboard";
+import { PERMISSIONS } from "@/lib/permissions";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.CLIENTS_READ);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   const { page, pageSize, search } = parsePaginationSearchParams(
@@ -79,9 +80,9 @@ type CreateClientBody = {
 };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.CLIENTS_WRITE);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   let body: CreateClientBody;

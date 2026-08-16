@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModulesTable } from "@/components/dashboard/modules-table";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { useModulesQuery } from "@/lib/hooks/use-modules";
 import { usePaginationState } from "@/lib/hooks/use-pagination";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -13,7 +14,7 @@ const AddModuleModal = dynamic(
     ),
   {
     loading: () => (
-      <div className="h-10 w-32 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" />
+      <div className="h-10 w-full animate-pulse rounded-md bg-zinc-200 sm:w-32 dark:bg-zinc-800" />
     ),
     ssr: false,
   },
@@ -31,16 +32,12 @@ export function ModulesPageContent() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Software Modules</h1>
-          <p className="text-zinc-500">
-            Manage Nixlor product catalog and base pricing
-          </p>
-        </div>
-        <AddModuleModal />
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Software Modules"
+        description="Manage Nixlor product catalog and base pricing"
+        action={<AddModuleModal />}
+      />
 
       <ModulesTable
         modules={data?.data ?? []}

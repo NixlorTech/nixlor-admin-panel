@@ -71,7 +71,7 @@ function StatsCardsComponent({
             </CardHeader>
             <CardContent>
               <div
-                className={`text-3xl font-bold ${isLoading ? "animate-pulse text-zinc-300" : ""}`}
+                className={`text-2xl font-bold sm:text-3xl ${isLoading ? "animate-pulse text-zinc-300" : ""}`}
               >
                 {isLoading ? "—" : stat.value}
               </div>

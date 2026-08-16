@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { getDashboardMetrics } from "@/lib/dashboard";
+import { PERMISSIONS } from "@/lib/permissions";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.DASHBOARD_READ);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   const metrics = await getDashboardMetrics();

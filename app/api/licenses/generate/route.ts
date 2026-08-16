@@ -1,8 +1,10 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { LicenseStatus, TransactionType } from "@/lib/generated/prisma/client";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { signLicenseToken } from "@/lib/license";
+import { DEFAULT_COMMISSION_RATE } from "@/lib/license-constants";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +13,13 @@ type GenerateLicenseBody = {
   softwareModuleId: string;
   durationInDays: number;
   customPrice: number;
+  commissionRate?: number;
 };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess("generate-licenses");
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   let body: GenerateLicenseBody;
@@ -57,6 +60,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const commissionRateInput = body.commissionRate ?? DEFAULT_COMMISSION_RATE;
+  if (
+    !Number.isFinite(commissionRateInput) ||
+    commissionRateInput < 0 ||
+    commissionRateInput > 100
+  ) {
+    return NextResponse.json(
+      { error: "commissionRate must be between 0 and 100" },
+      { status: 400 },
+    );
+  }
+
   const [client, softwareModule, existingLicense] = await Promise.all([
     prisma.client.findUnique({ where: { id: clientId } }),
     prisma.softwareModule.findUnique({ where: { id: softwareModuleId } }),
@@ -89,6 +104,13 @@ export async function POST(request: Request) {
     ? TransactionType.RENEWAL
     : TransactionType.NEW_ISSUANCE;
 
+  const tokenId = randomUUID();
+  const hasPartner = Boolean(client.alliancePartnerId);
+  const commissionRate = hasPartner ? commissionRateInput : null;
+  const commissionAmount = hasPartner
+    ? customPrice * (commissionRateInput / 100)
+    : null;
+
   const { license, transaction } = await prisma.$transaction(async (tx) => {
     const upsertedLicense = await tx.license.upsert({
       where: {
@@ -103,12 +125,14 @@ export async function POST(request: Request) {
         status: LicenseStatus.ACTIVE,
         validFrom,
         expiresAt,
+        latestTokenId: tokenId,
       },
       update: {
         status: LicenseStatus.ACTIVE,
         validFrom,
         expiresAt,
         lastHeartbeatAt: null,
+        latestTokenId: tokenId,
       },
       include: {
         softwareModule: true,
@@ -121,6 +145,8 @@ export async function POST(request: Request) {
         transactionType,
         amountPaid: customPrice,
         basePriceAtTime: softwareModule.basePrice,
+        commissionRate,
+        commissionAmount,
         validFrom,
         validUntil: expiresAt,
         alliancePartnerId: client.alliancePartnerId,
@@ -137,6 +163,7 @@ export async function POST(request: Request) {
     clientId,
     module: softwareModule.name,
     expiresAt,
+    jti: tokenId,
   });
 
   return NextResponse.json({
@@ -144,10 +171,13 @@ export async function POST(request: Request) {
     transactionId: transaction.id,
     transactionType: transaction.transactionType,
     token,
+    tokenId,
     expiresAt: license.expiresAt.toISOString(),
     durationInDays,
     customPrice: transaction.amountPaid,
     basePriceAtTime: transaction.basePriceAtTime,
+    commissionRate: transaction.commissionRate,
+    commissionAmount: transaction.commissionAmount,
     alliancePartnerId: transaction.alliancePartnerId,
     moduleName: license.softwareModule.name,
   });

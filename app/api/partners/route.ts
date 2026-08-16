@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 import { PartnerStatus, Prisma } from "@/lib/generated/prisma/client";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   buildPaginatedResponse,
   parsePaginationSearchParams,
 } from "@/lib/pagination";
+import { PERMISSIONS } from "@/lib/permissions";
+import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.PARTNERS_READ);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   const { page, pageSize, search } = parsePaginationSearchParams(
@@ -35,7 +36,11 @@ export async function GET(request: Request) {
       where,
       include: {
         transactions: {
-          select: { amountPaid: true },
+          select: {
+            amountPaid: true,
+            commissionAmount: true,
+            createdAt: true,
+          },
         },
       },
       orderBy: { name: "asc" },
@@ -44,6 +49,10 @@ export async function GET(request: Request) {
     }),
     prisma.alliancePartner.count({ where }),
   ]);
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
   const data = partners.map((partner) => ({
     id: partner.id,
@@ -56,6 +65,13 @@ export async function GET(request: Request) {
       (sum, transaction) => sum + transaction.amountPaid,
       0,
     ),
+    pendingCommissions: partner.transactions
+      .filter(
+        (transaction) =>
+          transaction.createdAt >= startOfMonth &&
+          transaction.createdAt <= endOfMonth,
+      )
+      .reduce((sum, transaction) => sum + (transaction.commissionAmount ?? 0), 0),
     createdAt: partner.createdAt.toISOString(),
     updatedAt: partner.updatedAt.toISOString(),
   }));
@@ -74,9 +90,9 @@ type CreatePartnerBody = {
 };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await verifyAccess(PERMISSIONS.PARTNERS_WRITE);
+  if (isAccessDenied(access)) {
+    return access.error;
   }
 
   let body: CreatePartnerBody;

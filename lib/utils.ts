@@ -6,7 +6,3 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const ADMIN_EMAIL = "admin@nixlor.com";
-
-export function isValidAdminEmail(email: string): boolean {
-  return email.toLowerCase() === ADMIN_EMAIL;
-}
