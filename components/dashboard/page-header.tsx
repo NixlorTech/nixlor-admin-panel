@@ -24,11 +24,11 @@ export function PageHeader({
     >
       <div className="min-w-0 flex-1">
         {eyebrow ? (
-          <div className="mb-1 text-sm text-zinc-500">{eyebrow}</div>
+          <div className="mb-1 text-sm text-muted">{eyebrow}</div>
         ) : null}
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">{title}</h1>
         {description ? (
-          <div className="mt-1 text-sm text-zinc-500 sm:text-base">
+          <div className="mt-1 text-sm text-muted sm:text-base">
             {description}
           </div>
         ) : null}

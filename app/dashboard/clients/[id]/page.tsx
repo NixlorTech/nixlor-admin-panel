@@ -89,7 +89,7 @@ export default async function ClientDetailPage({
                 ))}
               </div>
             ) : (
-              <span className="text-zinc-400">None</span>
+              <span className="text-muted">None</span>
             )}
           </CardContent>
         </Card>
@@ -104,7 +104,7 @@ export default async function ClientDetailPage({
       <div className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold sm:text-xl">Active Licenses</h2>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             Hardware-locked deployments and on-premises heartbeat status
           </p>
         </div>
@@ -116,7 +116,7 @@ export default async function ClientDetailPage({
           <h2 className="text-lg font-semibold sm:text-xl">
             Billing & Renewal History
           </h2>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             Append-only ledger of all license issuances and renewals
           </p>
         </div>

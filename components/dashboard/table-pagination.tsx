@@ -22,7 +22,7 @@ function TablePaginationComponent({
 
   return (
     <div className="flex flex-col gap-3 px-1 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <p className="text-center text-sm text-zinc-500 sm:text-left">
+      <p className="text-center text-sm text-muted sm:text-left">
         Showing {start}–{end} of {total}
         {isFetching ? " · Updating..." : ""}
       </p>
@@ -36,7 +36,7 @@ function TablePaginationComponent({
           <ChevronLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Previous</span>
         </Button>
-        <span className="text-sm text-zinc-600">
+        <span className="text-sm text-navy">
           Page {page} of {totalPages}
         </span>
         <Button

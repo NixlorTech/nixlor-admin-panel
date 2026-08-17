@@ -9,10 +9,9 @@ export function AppToaster() {
       position="top-center"
       toastOptions={{
         classNames: {
-          toast:
-            "border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50",
-          description: "text-zinc-500",
-          error: "border-red-200 dark:border-red-900",
+          toast: "border border-border bg-white text-navy",
+          description: "text-muted",
+          error: "border-red-200",
         },
       }}
     />

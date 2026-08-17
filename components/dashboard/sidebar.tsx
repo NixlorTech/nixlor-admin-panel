@@ -6,12 +6,12 @@ import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Users,
-  KeyRound,
   Package,
   Handshake,
   UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NixlorLogo } from "@/components/brand/nixlor-logo";
 import { SignOutButton } from "@/components/dashboard/sign-out-button";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
@@ -45,13 +45,9 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
   });
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 lg:h-screen lg:sticky lg:top-0">
-      <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-4 sm:px-6 sm:py-5 dark:border-zinc-800">
-        <KeyRound className="h-6 w-6 shrink-0 text-zinc-900 dark:text-zinc-50" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">Nixlor Admin Hub</p>
-          <p className="truncate text-xs text-zinc-500">License Generation CRM</p>
-        </div>
+    <aside className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground lg:h-screen lg:sticky lg:top-0">
+      <div className="border-b border-sidebar-border px-4 py-4 sm:px-6 sm:py-5">
+        <NixlorLogo variant="on-dark" size="md" />
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3 sm:p-4">
@@ -69,8 +65,8 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-muted hover:bg-white/5 hover:text-white",
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -80,8 +76,8 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-zinc-200 p-3 sm:p-4 dark:border-zinc-800">
-        <SignOutButton />
+      <div className="mt-auto border-t border-sidebar-border p-3 sm:p-4">
+        <SignOutButton className="w-full justify-start border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white" />
       </div>
     </aside>
   );

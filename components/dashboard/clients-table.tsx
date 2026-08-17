@@ -94,7 +94,7 @@ function ClientsTableComponent({
             >
               {row.original.businessName}
             </Link>
-            <p className="text-xs text-zinc-500">{row.original.contactEmail}</p>
+            <p className="text-xs text-muted">{row.original.contactEmail}</p>
           </div>
         ),
       },
@@ -112,7 +112,7 @@ function ClientsTableComponent({
               ))}
             </div>
           ) : (
-            <span className="text-zinc-400">None</span>
+            <span className="text-muted">None</span>
           );
         },
       },
@@ -195,7 +195,7 @@ function ClientsTableComponent({
   return (
     <div className="space-y-4">
       <div className="relative w-full max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <Input
           placeholder="Search clients..."
           value={search}
@@ -251,7 +251,7 @@ function ClientsTableComponent({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center text-zinc-500"
+                    className="h-24 text-center text-muted"
                   >
                     No clients found.
                   </TableCell>

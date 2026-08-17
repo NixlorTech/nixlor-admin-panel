@@ -63,7 +63,7 @@ function ModulesTableComponent({
           <div>
             <p className="font-medium">{row.original.name}</p>
             {row.original.description ? (
-              <p className="text-xs text-zinc-500">{row.original.description}</p>
+              <p className="text-xs text-muted">{row.original.description}</p>
             ) : null}
           </div>
         ),
@@ -105,7 +105,7 @@ function ModulesTableComponent({
   return (
     <div className="space-y-4">
       <div className="relative w-full max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <Input
           placeholder="Search modules..."
           value={search}
@@ -161,7 +161,7 @@ function ModulesTableComponent({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center text-zinc-500"
+                    className="h-24 text-center text-muted"
                   >
                     No software modules found.
                   </TableCell>

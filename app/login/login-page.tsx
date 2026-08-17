@@ -4,7 +4,6 @@ import { useEffect, useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NixlorLogo } from "@/components/brand/nixlor-logo";
 import { ADMIN_EMAIL } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -56,16 +56,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-            <KeyRound className="h-6 w-6" />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-teal/10 to-transparent" />
+
+      <Card className="relative w-full max-w-md border-border shadow-lg">
+        <CardHeader className="space-y-4 text-center">
+          <div className="mx-auto">
+            <NixlorLogo size="lg" showText={false} />
           </div>
-          <CardTitle>Nixlor Super Admin</CardTitle>
-          <CardDescription>
-            Sign in with your authorized admin credentials
-          </CardDescription>
+          <div className="space-y-1">
+            <CardTitle className="text-navy">Nixlor Super Admin</CardTitle>
+            <CardDescription>
+              Sign in with your authorized admin credentials
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

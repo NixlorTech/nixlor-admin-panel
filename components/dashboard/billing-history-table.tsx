@@ -90,7 +90,7 @@ export function BillingHistoryTable({
                   </Badge>
                 </TableCell>
                 <TableCell>{formatCurrency(transaction.amountPaid)}</TableCell>
-                <TableCell className="text-zinc-500">
+                <TableCell className="text-muted">
                   {formatCurrency(transaction.basePriceAtTime)}
                 </TableCell>
                 <TableCell>
@@ -100,7 +100,7 @@ export function BillingHistoryTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-zinc-500">
+              <TableCell colSpan={7} className="h-24 text-center text-muted">
                 No billing or renewal history yet.
               </TableCell>
             </TableRow>

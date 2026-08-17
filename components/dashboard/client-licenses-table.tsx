@@ -44,7 +44,7 @@ function ClientLicensesTableComponent({ licenses }: ClientLicensesTableProps) {
 
   if (activeLicenses.length === 0) {
     return (
-      <p className="text-sm text-zinc-500">No active licenses for this client.</p>
+      <p className="text-sm text-muted">No active licenses for this client.</p>
     );
   }
 
@@ -72,11 +72,11 @@ function ClientLicensesTableComponent({ licenses }: ClientLicensesTableProps) {
               </TableCell>
               <TableCell>
                 {license.hardwareId ? (
-                  <code className="rounded bg-zinc-100 px-2 py-1 text-xs dark:bg-zinc-900">
+                  <code className="rounded bg-cyan/10 px-2 py-1 text-xs">
                     {truncateHardwareId(license.hardwareId)}
                   </code>
                 ) : (
-                  <span className="text-zinc-400">Unlocked</span>
+                  <span className="text-muted">Unlocked</span>
                 )}
               </TableCell>
               <TableCell>
@@ -90,7 +90,7 @@ function ClientLicensesTableComponent({ licenses }: ClientLicensesTableProps) {
                     Reset Hardware
                   </Button>
                 ) : (
-                  <span className="text-xs text-zinc-400">—</span>
+                  <span className="text-xs text-muted">—</span>
                 )}
               </TableCell>
             </TableRow>

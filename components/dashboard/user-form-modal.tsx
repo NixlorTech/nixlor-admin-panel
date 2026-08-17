@@ -177,14 +177,14 @@ function UserFormFields({ user, onClose }: UserFormFieldsProps) {
             </SelectContent>
           </Select>
           {selectedRole ? (
-            <p className="text-xs text-zinc-500">{selectedRole.description}</p>
+            <p className="text-xs text-muted">{selectedRole.description}</p>
           ) : null}
         </div>
 
         {selectedRole ? (
           <div className="space-y-2">
             <Label>Permissions</Label>
-            <div className="flex flex-wrap gap-1 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <div className="flex flex-wrap gap-1 rounded-lg border border-border p-3">
               {selectedRole.permissions.map((permission) => (
                 <Badge key={permission.id} variant="secondary">
                   {permission.name}

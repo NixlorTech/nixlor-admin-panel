@@ -9,7 +9,7 @@ const GenerateLicenseModal = dynamic(
     ),
   {
     loading: () => (
-      <div className="h-10 w-36 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800" />
+      <div className="h-10 w-36 animate-pulse rounded-md bg-navy/10" />
     ),
     ssr: false,
   },

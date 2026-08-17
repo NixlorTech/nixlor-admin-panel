@@ -1,22 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
+  --background: #ffffff;
+  --foreground: #0a192f;
+  --muted: #5a6b7d;
+  --muted-foreground: #5a6b7d;
+  --border: #e2e8f0;
+  --card: #ffffff;
+  --navy: #0a192f;
+  --cyan: #00d2ff;
+  --teal: #007a8a;
+  --cyan-foreground: #0a192f;
+  --teal-foreground: #ffffff;
+  --sidebar: #0a192f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.65);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-accent: rgba(0, 210, 255, 0.15);
+  --sidebar-accent-foreground: #00d2ff;
+  --ring: #00d2ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-navy: var(--navy);
+  --color-cyan: var(--cyan);
+  --color-teal: var(--teal);
+  --color-cyan-foreground: var(--cyan-foreground);
+  --color-teal-foreground: var(--teal-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-  }
 }
 
 body {

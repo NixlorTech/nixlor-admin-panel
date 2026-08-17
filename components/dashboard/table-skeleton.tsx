@@ -11,7 +11,7 @@ type TableSkeletonProps = {
 function TableSkeletonComponent({ rows = 5, columns = 5 }: TableSkeletonProps) {
   return (
     <TableContainer>
-      <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+      <div className="divide-y divide-border">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div
             key={rowIndex}
@@ -21,7 +21,7 @@ function TableSkeletonComponent({ rows = 5, columns = 5 }: TableSkeletonProps) {
             {Array.from({ length: columns }).map((__, colIndex) => (
               <div
                 key={colIndex}
-                className="h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"
+                className="h-4 animate-pulse rounded bg-navy/10"
               />
             ))}
           </div>

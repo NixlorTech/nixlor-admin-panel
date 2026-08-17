@@ -73,7 +73,7 @@ function UsersTableComponent({
         cell: ({ row }) => (
           <div>
             <p className="font-medium">{row.original.name ?? "—"}</p>
-            <p className="text-xs text-zinc-500">{row.original.email}</p>
+            <p className="text-xs text-muted">{row.original.email}</p>
           </div>
         ),
       },
@@ -158,7 +158,7 @@ function UsersTableComponent({
     <>
       <div className="space-y-4">
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <Input
             placeholder="Search users..."
             value={search}
@@ -214,7 +214,7 @@ function UsersTableComponent({
                   <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className="h-24 text-center text-zinc-500"
+                      className="h-24 text-center text-muted"
                     >
                       No users found.
                     </TableCell>

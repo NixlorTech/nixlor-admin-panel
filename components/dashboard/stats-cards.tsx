@@ -3,6 +3,7 @@
 import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, AlertTriangle, Ban, IndianRupee } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type StatsCardsProps = {
   activeClients: number;
@@ -19,6 +20,13 @@ function formatCurrency(amount: number) {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+const iconColors = [
+  "text-cyan",
+  "text-amber-500",
+  "text-red-500",
+  "text-teal",
+] as const;
 
 function StatsCardsComponent({
   activeClients,
@@ -61,21 +69,26 @@ function StatsCardsComponent({
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => {
+      {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <Icon className="h-4 w-4 text-zinc-500" />
+              <CardTitle className="text-sm font-medium text-navy">
+                {stat.title}
+              </CardTitle>
+              <Icon className={cn("h-4 w-4", iconColors[index])} />
             </CardHeader>
             <CardContent>
               <div
-                className={`text-2xl font-bold sm:text-3xl ${isLoading ? "animate-pulse text-zinc-300" : ""}`}
+                className={cn(
+                  "text-2xl font-bold text-navy sm:text-3xl",
+                  isLoading && "animate-pulse text-muted",
+                )}
               >
                 {isLoading ? "—" : stat.value}
               </div>
-              <p className="text-xs text-zinc-500">{stat.description}</p>
+              <p className="text-xs text-muted">{stat.description}</p>
             </CardContent>
           </Card>
         );

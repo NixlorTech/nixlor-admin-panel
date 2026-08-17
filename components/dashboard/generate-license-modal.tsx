@@ -359,7 +359,7 @@ export function GenerateLicenseModal() {
                 }
               />
               {selectedModule ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted">
                   Catalog base price: ₹
                   {selectedModule.basePrice.toLocaleString("en-IN")}. Override to
                   apply a discount or upcharge.
@@ -377,7 +377,7 @@ export function GenerateLicenseModal() {
                 value={commissionRate}
                 onChange={(event) => setCommissionRate(event.target.value)}
               />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted">
                 Applied when the client has an alliance partner assigned. Defaults
                 to 20%.
               </p>

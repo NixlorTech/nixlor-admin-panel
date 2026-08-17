@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export function SignOutButton() {
+export function SignOutButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -25,7 +26,7 @@ export function SignOutButton() {
     <>
       <Button
         variant="outline"
-        className="w-full justify-start"
+        className={cn("justify-start", className)}
         onClick={() => setOpen(true)}
       >
         <LogOut className="h-4 w-4" />

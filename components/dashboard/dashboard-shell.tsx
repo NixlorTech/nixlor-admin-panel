@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { cn } from "@/lib/utils";
@@ -31,12 +32,12 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
   }, [mobileOpen]);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex min-h-screen bg-background">
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Close navigation menu"
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-navy/60 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
@@ -51,7 +52,7 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <header className="border-b border-border bg-white">
           <div className="flex items-center gap-3 px-4 py-3 lg:hidden">
             <Button
               type="button"
@@ -62,15 +63,22 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
             >
               <Menu className="h-4 w-4" />
             </Button>
+            <Image
+              src="/logo.png"
+              alt="Nixlor"
+              width={28}
+              height={28}
+              className="shrink-0"
+            />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{userEmail}</p>
-              <p className="text-xs text-zinc-500">Nixlor Admin Hub</p>
+              <p className="truncate text-sm font-medium text-navy">{userEmail}</p>
+              <p className="text-xs text-muted">Nixlor Admin Hub</p>
             </div>
           </div>
 
           <div className="hidden px-8 py-5 lg:block">
-            <p className="text-sm text-zinc-500">Signed in as</p>
-            <p className="font-medium">{userEmail}</p>
+            <p className="text-sm text-muted">Signed in as</p>
+            <p className="font-medium text-navy">{userEmail}</p>
           </div>
         </header>
 

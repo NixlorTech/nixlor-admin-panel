@@ -45,7 +45,7 @@ export function UsersPageContent() {
     return (
       <div className="space-y-4">
         <PageHeader title="Users" />
-        <p className="text-sm text-zinc-500 sm:text-base">
+        <p className="text-sm text-muted sm:text-base">
           You do not have permission to view admin users.
         </p>
       </div>
