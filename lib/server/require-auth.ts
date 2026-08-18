@@ -40,7 +40,7 @@ export function isAccessDenied(
   return "error" in result;
 }
 
-function userHasPermission(
+export function userHasPermission(
   user: VerifiedAdminUser,
   requiredPermissionSlug: string,
 ): boolean {

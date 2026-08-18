@@ -31,4 +31,17 @@ export const queryKeys = {
     all: ["roles"] as const,
     list: ["roles", "list"] as const,
   },
+  installations: {
+    all: ["installations"] as const,
+    list: (clientId?: string) => ["installations", "list", clientId ?? "all"] as const,
+    detail: (id: string) => ["installations", "detail", id] as const,
+  },
+  licenses: {
+    detail: (id: string) => ["licenses", "detail", id] as const,
+  },
+  auditLogs: {
+    all: ["audit-logs"] as const,
+    list: (params: Record<string, string | undefined>) =>
+      ["audit-logs", "list", params] as const,
+  },
 } as const;

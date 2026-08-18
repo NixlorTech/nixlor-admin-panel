@@ -26,46 +26,81 @@ export async function getDashboardMetrics() {
   const now = new Date();
   const thirtyDaysFromNow = new Date(now.getTime() + THIRTY_DAYS_MS);
   const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const offlineThreshold = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
-  const [activeClients, expiringSoon, revokedLicenses, revenueAggregate] =
-    await Promise.all([
-      prisma.client.count({
-        where: {
-          licenses: {
-            some: {
-              status: LicenseStatus.ACTIVE,
-              expiresAt: { gt: now },
-            },
+  const [
+    activeClients,
+    activeInstallations,
+    activeLicenses,
+    expiringSoon,
+    expiredLicenses,
+    revokedLicenses,
+    revenueAggregate,
+    commissionAggregate,
+    activePartners,
+    onlineInstallations,
+    offlineInstallations,
+  ] = await Promise.all([
+    prisma.client.count({
+      where: {
+        status: "ACTIVE",
+        licenses: {
+          some: {
+            status: LicenseStatus.ACTIVE,
+            expiresAt: { gt: now },
           },
         },
-      }),
-      prisma.license.count({
-        where: {
-          status: LicenseStatus.ACTIVE,
-          expiresAt: {
-            gt: now,
-            lte: thirtyDaysFromNow,
-          },
-        },
-      }),
-      prisma.license.count({
-        where: {
-          status: LicenseStatus.REVOKED,
-        },
-      }),
-      prisma.licenseTransaction.aggregate({
-        _sum: { amountPaid: true },
-        where: {
-          createdAt: { gte: startOfYear },
-        },
-      }),
-    ]);
+      },
+    }),
+    prisma.installation.count({ where: { status: "ACTIVE" } }),
+    prisma.license.count({
+      where: {
+        status: LicenseStatus.ACTIVE,
+        expiresAt: { gt: now },
+      },
+    }),
+    prisma.license.count({
+      where: {
+        status: LicenseStatus.ACTIVE,
+        expiresAt: { gt: now, lte: thirtyDaysFromNow },
+      },
+    }),
+    prisma.license.count({ where: { status: LicenseStatus.EXPIRED } }),
+    prisma.license.count({ where: { status: LicenseStatus.REVOKED } }),
+    prisma.licenseTransaction.aggregate({
+      _sum: { amountPaid: true },
+      where: { createdAt: { gte: startOfYear } },
+    }),
+    prisma.licenseTransaction.aggregate({
+      _sum: { commissionAmount: true },
+      where: { createdAt: { gte: startOfYear } },
+    }),
+    prisma.alliancePartner.count({ where: { status: "ACTIVE" } }),
+    prisma.installation.count({
+      where: { lastHeartbeatAt: { gte: offlineThreshold } },
+    }),
+    prisma.installation.count({
+      where: {
+        OR: [
+          { lastHeartbeatAt: { lt: offlineThreshold } },
+          { lastHeartbeatAt: null },
+        ],
+      },
+    }),
+  ]);
 
   return {
     activeClients,
+    activeInstallations,
+    activeLicenses,
     expiringSoon,
+    expiredLicenses,
     revokedLicenses,
     totalRevenue: revenueAggregate._sum.amountPaid ?? 0,
+    partnerCommissions: commissionAggregate._sum.commissionAmount ?? 0,
+    activePartners,
+    onlineInstallations,
+    offlineInstallations,
   };
 }
 

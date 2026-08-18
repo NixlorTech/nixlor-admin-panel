@@ -4,9 +4,16 @@ import { queryKeys } from "@/lib/query-keys";
 
 type DashboardMetrics = {
   activeClients: number;
+  activeInstallations: number;
+  activeLicenses: number;
   expiringSoon: number;
+  expiredLicenses: number;
   revokedLicenses: number;
   totalRevenue: number;
+  partnerCommissions: number;
+  activePartners: number;
+  onlineInstallations: number;
+  offlineInstallations: number;
 };
 
 export function useDashboardMetricsQuery() {

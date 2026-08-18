@@ -38,11 +38,7 @@ async function seedRolesAndPermissions() {
 
   for (const role of ROLE_DEFINITIONS) {
     const permissions = await prisma.permission.findMany({
-      where: {
-        slug: {
-          in: [...role.permissions],
-        },
-      },
+      where: { slug: { in: [...role.permissions] } },
     });
 
     const savedRole = await prisma.adminRole.upsert({
@@ -60,10 +56,7 @@ async function seedRolesAndPermissions() {
       },
     });
 
-    await prisma.rolePermission.deleteMany({
-      where: { roleId: savedRole.id },
-    });
-
+    await prisma.rolePermission.deleteMany({ where: { roleId: savedRole.id } });
     await prisma.rolePermission.createMany({
       data: permissions.map((permission) => ({
         roleId: savedRole.id,
@@ -85,8 +78,19 @@ async function main() {
     throw new Error("Super Admin role was not seeded");
   }
 
-  const password = process.env.ADMIN_SEED_PASSWORD ?? "ChangeMeNow!123";
-  const passwordHash = await bcrypt.hash(password, 12);
+  const isProduction = process.env.NODE_ENV === "production";
+  const password = process.env.ADMIN_SEED_PASSWORD;
+
+  if (!password) {
+    if (isProduction) {
+      throw new Error(
+        "ADMIN_SEED_PASSWORD must be set when seeding in production (NODE_ENV=production).",
+      );
+    }
+  }
+
+  const resolvedPassword = password ?? "ChangeMeNow!123";
+  const passwordHash = await bcrypt.hash(resolvedPassword, 12);
 
   await prisma.adminUser.upsert({
     where: { email: ADMIN_EMAIL },
@@ -105,22 +109,7 @@ async function main() {
     },
   });
 
-  const usersWithoutRole = await prisma.adminUser.findMany({
-    select: { id: true, roleId: true },
-  });
-
-  await Promise.all(
-    usersWithoutRole
-      .filter((user) => !user.roleId)
-      .map((user) =>
-        prisma.adminUser.update({
-          where: { id: user.id },
-          data: { roleId: superAdminRole.id },
-        }),
-      ),
-  );
-
-  console.log(`Seeded roles, permissions, and admin user: ${ADMIN_EMAIL}`);
+  console.log(`Seeded roles, permissions, and Super Admin: ${ADMIN_EMAIL}`);
 }
 
 main()

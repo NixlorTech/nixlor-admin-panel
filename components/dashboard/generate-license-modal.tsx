@@ -24,8 +24,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useClientOptionsQuery } from "@/lib/hooks/use-clients";
 import { useActiveModulesQuery } from "@/lib/hooks/use-modules";
 import { useActivePartnersQuery } from "@/lib/hooks/use-partners";
+import { useInstallationsQuery } from "@/lib/hooks/use-installations";
 import {
   useCreateClientMutation,
+  useCreateInstallationMutation,
   useGenerateLicenseMutation,
 } from "@/lib/hooks/use-dashboard-mutations";
 
@@ -48,6 +50,10 @@ export function GenerateLicenseModal() {
   const [region, setRegion] = useState("");
   const [alliancePartnerId, setAlliancePartnerId] = useState("");
   const [softwareModuleId, setSoftwareModuleId] = useState("");
+  const [installationId, setInstallationId] = useState("");
+  const [installationMode, setInstallationMode] = useState<"existing" | "new">("existing");
+  const [newInstallationIdentifier, setNewInstallationIdentifier] = useState("");
+  const [newInstallationHostname, setNewInstallationHostname] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const [commissionRate, setCommissionRate] = useState("20");
   const [durationInDays, setDurationInDays] = useState("365");
@@ -62,12 +68,17 @@ export function GenerateLicenseModal() {
     useActiveModulesQuery(open);
   const { data: partners = [], isLoading: partnersLoading } =
     useActivePartnersQuery(open);
+  const { data: installations = [], isLoading: installationsLoading } =
+    useInstallationsQuery(clientId || undefined);
 
   const createClientMutation = useCreateClientMutation();
+  const createInstallationMutation = useCreateInstallationMutation();
   const generateLicenseMutation = useGenerateLicenseMutation();
 
   const isPending =
-    createClientMutation.isPending || generateLicenseMutation.isPending;
+    createClientMutation.isPending ||
+    createInstallationMutation.isPending ||
+    generateLicenseMutation.isPending;
 
   const selectedModule = modules.find(
     (softwareModule) => softwareModule.id === softwareModuleId,
@@ -107,6 +118,10 @@ export function GenerateLicenseModal() {
     setRegion("");
     setAlliancePartnerId("");
     setSoftwareModuleId("");
+    setInstallationId("");
+    setInstallationMode("existing");
+    setNewInstallationIdentifier("");
+    setNewInstallationHostname("");
     setCustomPrice("");
     setCommissionRate("20");
     setDurationInDays("365");
@@ -138,6 +153,24 @@ export function GenerateLicenseModal() {
         throw new Error("Client and software module are required");
       }
 
+      let targetInstallationId = installationId;
+
+      if (installationMode === "new") {
+        if (!newInstallationIdentifier.trim()) {
+          throw new Error("Installation identifier is required");
+        }
+        const createdInstallation = await createInstallationMutation.mutateAsync({
+          clientId: targetClientId,
+          installationIdentifier: newInstallationIdentifier.trim(),
+          hostname: newInstallationHostname.trim() || undefined,
+        });
+        targetInstallationId = createdInstallation.id;
+      }
+
+      if (!targetInstallationId) {
+        throw new Error("Installation is required");
+      }
+
       const duration = Number(durationInDays);
       if (!Number.isFinite(duration) || duration < 1) {
         throw new Error("Duration must be a positive number");
@@ -156,6 +189,7 @@ export function GenerateLicenseModal() {
       const payload = await generateLicenseMutation.mutateAsync({
         clientId: targetClientId,
         softwareModuleId,
+        installationId: targetInstallationId,
         durationInDays: duration,
         customPrice: price,
         commissionRate: rate,
@@ -174,7 +208,12 @@ export function GenerateLicenseModal() {
     createClientMutation,
     customPrice,
     durationInDays,
+    createInstallationMutation,
     generateLicenseMutation,
+    installationId,
+    installationMode,
+    newInstallationHostname,
+    newInstallationIdentifier,
     mode,
     phone,
     region,
@@ -232,7 +271,13 @@ export function GenerateLicenseModal() {
           {mode === "existing" ? (
             <div className="space-y-2">
               <Label htmlFor="client">Client</Label>
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select
+                value={clientId}
+                onValueChange={(value) => {
+                  setClientId(value);
+                  setInstallationId("");
+                }}
+              >
                 <SelectTrigger id="client">
                   <SelectValue
                     placeholder={
@@ -318,6 +363,75 @@ export function GenerateLicenseModal() {
               </div>
             </div>
           )}
+
+          {(mode === "existing" && clientId) || mode === "new" ? (
+            <div className="space-y-3">
+              <Label>Installation</Label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant={installationMode === "existing" ? "default" : "outline"}
+                  onClick={() => setInstallationMode("existing")}
+                >
+                  Select Existing
+                </Button>
+                <Button
+                  type="button"
+                  variant={installationMode === "new" ? "default" : "outline"}
+                  onClick={() => setInstallationMode("new")}
+                >
+                  Create New
+                </Button>
+              </div>
+
+              {installationMode === "existing" ? (
+                <Select
+                  value={installationId}
+                  onValueChange={setInstallationId}
+                  disabled={mode === "existing" && installationsLoading}
+                >
+                  <SelectTrigger id="installation">
+                    <SelectValue
+                      placeholder={
+                        mode === "existing" && installationsLoading
+                          ? "Loading installations..."
+                          : "Select on-prem installation"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {installations.map((installation) => (
+                      <SelectItem key={installation.id} value={installation.id}>
+                        {installation.installationIdentifier}
+                        {installation.hostname ? ` (${installation.hostname})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="newInstallationId">Installation Identifier</Label>
+                    <Input
+                      id="newInstallationId"
+                      value={newInstallationIdentifier}
+                      onChange={(e) => setNewInstallationIdentifier(e.target.value)}
+                      placeholder="e.g. prod-site-01"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newInstallationHost">Hostname (optional)</Label>
+                    <Input
+                      id="newInstallationHost"
+                      value={newInstallationHostname}
+                      onChange={(e) => setNewInstallationHostname(e.target.value)}
+                      placeholder="server.example.com"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">

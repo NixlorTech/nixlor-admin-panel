@@ -54,6 +54,7 @@ export function useCreateClientMutation() {
 type GenerateLicenseInput = {
   clientId: string;
   softwareModuleId: string;
+  installationId: string;
   durationInDays: number;
   customPrice: number;
   commissionRate?: number;
@@ -74,6 +75,85 @@ export function useGenerateLicenseMutation() {
         queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.metrics }),
         queryClient.invalidateQueries({ queryKey: queryKeys.partners.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.installations.all }),
+      ]);
+    },
+  });
+}
+
+type CreateInstallationInput = {
+  clientId: string;
+  installationIdentifier: string;
+  environment?: string;
+  hostname?: string;
+};
+
+export function useCreateInstallationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateInstallationInput) =>
+      fetchJson<{ id: string }>("/api/installations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.installations.all });
+    },
+  });
+}
+
+type RenewLicenseInput = {
+  licenseId: string;
+  durationInDays: number;
+  customPrice: number;
+  commissionRate?: number;
+};
+
+export function useRenewLicenseMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ licenseId, ...input }: RenewLicenseInput) =>
+      fetchJson(`/api/licenses/${licenseId}/renew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.licenses.detail(variables.licenseId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.metrics }),
+      ]);
+    },
+  });
+}
+
+export function useLicenseStatusMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      licenseId,
+      status,
+      revocationReason,
+    }: {
+      licenseId: string;
+      status: "ACTIVE" | "REVOKED" | "EXPIRED";
+      revocationReason?: string;
+    }) =>
+      fetchJson(`/api/licenses/${licenseId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, revocationReason }),
+      }),
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.licenses.detail(variables.licenseId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.metrics }),
       ]);
     },
   });
@@ -210,9 +290,11 @@ export function useResetHardwareMutation() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (licenseId: string) =>
+    mutationFn: ({ licenseId, reason }: { licenseId: string; reason: string }) =>
       fetchJson(`/api/licenses/${licenseId}/hardware`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
       }),
     onSuccess: async () => {
       await Promise.all([

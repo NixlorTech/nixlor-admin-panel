@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/lib/pagination";
 import { PERMISSIONS } from "@/lib/permissions";
 import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
+import { createAdminUser } from "@/lib/services/admin-user-mutations";
 
 export const dynamic = "force-dynamic";
 
@@ -80,48 +80,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const email = body.email?.trim().toLowerCase();
-  const password = body.password;
-  const name = body.name?.trim() || null;
-  const { roleId } = body;
-
-  if (!email || !password || !roleId) {
-    return NextResponse.json(
-      { error: "email, password, and roleId are required" },
-      { status: 400 },
-    );
+  const result = await createAdminUser(access.user, body);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  if (password.length < 8) {
-    return NextResponse.json(
-      { error: "Password must be at least 8 characters" },
-      { status: 400 },
-    );
-  }
-
-  const role = await prisma.adminRole.findUnique({ where: { id: roleId } });
-  if (!role) {
-    return NextResponse.json({ error: "Role not found" }, { status: 404 });
-  }
-
-  const existing = await prisma.adminUser.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json(
-      { error: "A user with this email already exists" },
-      { status: 409 },
-    );
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.adminUser.create({
-    data: {
-      email,
-      passwordHash,
-      name,
-      roleId,
-    },
-    include: adminUserInclude,
-  });
-
-  return NextResponse.json(serializeAdminUser(user), { status: 201 });
+  return NextResponse.json(result.user, { status: 201 });
 }

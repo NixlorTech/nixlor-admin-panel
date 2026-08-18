@@ -1,20 +1,28 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { LicenseStatus, TransactionType } from "@/lib/generated/prisma/client";
+import {
+  ActivationStatus,
+  LicenseStatus,
+  TransactionType,
+} from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { signLicenseToken } from "@/lib/license";
 import { DEFAULT_COMMISSION_RATE } from "@/lib/license-constants";
+import { apiError } from "@/lib/server/api-response";
+import { createRequestId } from "@/lib/server/security";
 import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
+import { createAuditLog } from "@/lib/services/audit-log";
+import {
+  getIdempotencyKey,
+  getIdempotentResponse,
+  storeIdempotentResponse,
+} from "@/lib/services/idempotency";
+import { recordLicenseEvent } from "@/lib/services/license-events";
+import { licenseGenerateSchema, parseJsonBody } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 
-type GenerateLicenseBody = {
-  clientId: string;
-  softwareModuleId: string;
-  durationInDays: number;
-  customPrice: number;
-  commissionRate?: number;
-};
+const OPERATION = "generate-license";
 
 export async function POST(request: Request) {
   const access = await verifyAccess("generate-licenses");
@@ -22,83 +30,66 @@ export async function POST(request: Request) {
     return access.error;
   }
 
-  let body: GenerateLicenseBody;
+  const requestId = createRequestId();
+  const idempotencyKey = getIdempotencyKey(request);
+
+  if (idempotencyKey) {
+    const cached = await getIdempotentResponse<Record<string, unknown>>(
+      idempotencyKey,
+      OPERATION,
+    );
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+  }
+
+  let json: unknown;
   try {
-    body = (await request.json()) as GenerateLicenseBody;
+    json = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return apiError("INVALID_JSON", "Invalid JSON body", 400);
   }
 
-  const { clientId, softwareModuleId, durationInDays, customPrice } = body;
-
-  if (
-    !clientId ||
-    !softwareModuleId ||
-    !durationInDays ||
-    customPrice == null
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "clientId, softwareModuleId, durationInDays, and customPrice are required",
-      },
-      { status: 400 },
-    );
+  const parsed = parseJsonBody(licenseGenerateSchema, json);
+  if (!parsed.success) {
+    return apiError("VALIDATION_ERROR", parsed.message, 400);
   }
 
-  if (!Number.isFinite(durationInDays) || durationInDays < 1) {
-    return NextResponse.json(
-      { error: "durationInDays must be a positive number" },
-      { status: 400 },
-    );
-  }
-
-  if (!Number.isFinite(customPrice) || customPrice < 0) {
-    return NextResponse.json(
-      { error: "customPrice must be a non-negative number" },
-      { status: 400 },
-    );
-  }
-
+  const body = parsed.data;
   const commissionRateInput = body.commissionRate ?? DEFAULT_COMMISSION_RATE;
-  if (
-    !Number.isFinite(commissionRateInput) ||
-    commissionRateInput < 0 ||
-    commissionRateInput > 100
-  ) {
-    return NextResponse.json(
-      { error: "commissionRate must be between 0 and 100" },
-      { status: 400 },
-    );
-  }
 
-  const [client, softwareModule, existingLicense] = await Promise.all([
-    prisma.client.findUnique({ where: { id: clientId } }),
-    prisma.softwareModule.findUnique({ where: { id: softwareModuleId } }),
-    prisma.license.findUnique({
-      where: {
-        clientId_softwareModuleId: {
-          clientId,
-          softwareModuleId,
+  const [client, softwareModule, installation, existingLicense] =
+    await Promise.all([
+      prisma.client.findUnique({ where: { id: body.clientId } }),
+      prisma.softwareModule.findUnique({ where: { id: body.softwareModuleId } }),
+      prisma.installation.findFirst({
+        where: { id: body.installationId, clientId: body.clientId },
+      }),
+      prisma.license.findUnique({
+        where: {
+          installationId_softwareModuleId: {
+            installationId: body.installationId,
+            softwareModuleId: body.softwareModuleId,
+          },
         },
-      },
-    }),
-  ]);
+      }),
+    ]);
 
   if (!client) {
-    return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    return apiError("NOT_FOUND", "Client not found", 404);
   }
 
   if (!softwareModule) {
-    return NextResponse.json(
-      { error: "Software module not found" },
-      { status: 404 },
-    );
+    return apiError("NOT_FOUND", "Software module not found", 404);
+  }
+
+  if (!installation) {
+    return apiError("INSTALLATION_NOT_FOUND", "Installation not found for this client", 404);
   }
 
   const validFrom = new Date();
   const expiresAt = new Date(validFrom);
-  expiresAt.setDate(expiresAt.getDate() + durationInDays);
+  expiresAt.setDate(expiresAt.getDate() + body.durationInDays);
 
   const transactionType = existingLicense
     ? TransactionType.RENEWAL
@@ -108,77 +99,145 @@ export async function POST(request: Request) {
   const hasPartner = Boolean(client.alliancePartnerId);
   const commissionRate = hasPartner ? commissionRateInput : null;
   const commissionAmount = hasPartner
-    ? customPrice * (commissionRateInput / 100)
+    ? body.customPrice * (commissionRateInput / 100)
     : null;
 
-  const { license, transaction } = await prisma.$transaction(async (tx) => {
-    const upsertedLicense = await tx.license.upsert({
-      where: {
-        clientId_softwareModuleId: {
-          clientId,
-          softwareModuleId,
+  const auditContext = { actorId: access.user.id, requestId };
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const upsertedLicense = await tx.license.upsert({
+        where: {
+          installationId_softwareModuleId: {
+            installationId: body.installationId,
+            softwareModuleId: body.softwareModuleId,
+          },
         },
-      },
-      create: {
-        clientId,
-        softwareModuleId,
-        status: LicenseStatus.ACTIVE,
-        validFrom,
-        expiresAt,
-        latestTokenId: tokenId,
-      },
-      update: {
-        status: LicenseStatus.ACTIVE,
-        validFrom,
-        expiresAt,
-        lastHeartbeatAt: null,
-        latestTokenId: tokenId,
-      },
-      include: {
-        softwareModule: true,
-      },
+        create: {
+          clientId: body.clientId,
+          installationId: body.installationId,
+          softwareModuleId: body.softwareModuleId,
+          status: LicenseStatus.ACTIVE,
+          activationStatus: ActivationStatus.ISSUED,
+          validFrom,
+          expiresAt,
+          latestTokenId: tokenId,
+        },
+        update: {
+          status: LicenseStatus.ACTIVE,
+          activationStatus: ActivationStatus.ISSUED,
+          validFrom,
+          expiresAt,
+          lastHeartbeatAt: null,
+          latestTokenId: tokenId,
+          revocationReason: null,
+          revocationNotes: null,
+        },
+        include: { softwareModule: true },
+      });
+
+      const createdTransaction = await tx.licenseTransaction.create({
+        data: {
+          licenseId: upsertedLicense.id,
+          transactionType,
+          amountPaid: body.customPrice,
+          basePriceAtTime: softwareModule.basePrice,
+          commissionRate,
+          commissionAmount,
+          validFrom,
+          validUntil: expiresAt,
+          alliancePartnerId: client.alliancePartnerId,
+          idempotencyKey: idempotencyKey ?? null,
+        },
+      });
+
+      await recordLicenseEvent(
+        {
+          licenseId: upsertedLicense.id,
+          installationId: body.installationId,
+          eventType:
+            transactionType === TransactionType.NEW_ISSUANCE ? "ISSUED" : "RENEWED",
+          actorId: access.user.id,
+          source: "admin",
+          metadata: {
+            transactionId: createdTransaction.id,
+            amountPaid: body.customPrice,
+            commissionRate,
+          },
+        },
+        tx,
+      );
+
+      await createAuditLog(
+        {
+          action: "GENERATE_LICENSE",
+          entityType: "License",
+          entityId: upsertedLicense.id,
+          after: {
+            clientId: body.clientId,
+            installationId: body.installationId,
+            softwareModuleId: body.softwareModuleId,
+            transactionType,
+            expiresAt: expiresAt.toISOString(),
+          },
+          context: auditContext,
+        },
+        tx,
+      );
+
+      return { license: upsertedLicense, transaction: createdTransaction };
     });
 
-    const createdTransaction = await tx.licenseTransaction.create({
-      data: {
-        licenseId: upsertedLicense.id,
-        transactionType,
-        amountPaid: customPrice,
-        basePriceAtTime: softwareModule.basePrice,
-        commissionRate,
-        commissionAmount,
-        validFrom,
-        validUntil: expiresAt,
-        alliancePartnerId: client.alliancePartnerId,
-      },
+    const token = signLicenseToken({
+      clientId: body.clientId,
+      module: softwareModule.code ?? softwareModule.name,
+      expiresAt,
+      jti: tokenId,
+      installationId: body.installationId,
+      validFrom,
     });
 
-    return {
-      license: upsertedLicense,
-      transaction: createdTransaction,
+    const responseBody = {
+      licenseId: result.license.id,
+      installationId: body.installationId,
+      transactionId: result.transaction.id,
+      transactionType: result.transaction.transactionType,
+      token,
+      tokenId,
+      expiresAt: result.license.expiresAt.toISOString(),
+      durationInDays: body.durationInDays,
+      customPrice: result.transaction.amountPaid,
+      basePriceAtTime: result.transaction.basePriceAtTime,
+      commissionRate: result.transaction.commissionRate,
+      commissionAmount: result.transaction.commissionAmount,
+      alliancePartnerId: result.transaction.alliancePartnerId,
+      moduleCode: result.license.softwareModule.code ?? result.license.softwareModule.name,
+      moduleName: result.license.softwareModule.name,
+      deploymentConfig: {
+        NIXLOR_CLIENT_ID: body.clientId,
+        NIXLOR_MODULE_CODE: softwareModule.code ?? softwareModule.name,
+        NIXLOR_MODULE_NAME: softwareModule.name,
+        NIXLOR_HUB_URL: process.env.AUTH_URL ?? "https://admin.nixlor.com",
+        NIXLOR_INSTALLATION_ID: body.installationId,
+      },
     };
-  });
 
-  const token = signLicenseToken({
-    clientId,
-    module: softwareModule.name,
-    expiresAt,
-    jti: tokenId,
-  });
+    if (idempotencyKey) {
+      await storeIdempotentResponse(idempotencyKey, OPERATION, responseBody);
+    }
 
-  return NextResponse.json({
-    licenseId: license.id,
-    transactionId: transaction.id,
-    transactionType: transaction.transactionType,
-    token,
-    tokenId,
-    expiresAt: license.expiresAt.toISOString(),
-    durationInDays,
-    customPrice: transaction.amountPaid,
-    basePriceAtTime: transaction.basePriceAtTime,
-    commissionRate: transaction.commissionRate,
-    commissionAmount: transaction.commissionAmount,
-    alliancePartnerId: transaction.alliancePartnerId,
-    moduleName: license.softwareModule.name,
-  });
+    return NextResponse.json(responseBody);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Unique constraint")
+    ) {
+      return apiError(
+        "DUPLICATE_LICENSE",
+        "An active license already exists for this installation and module",
+        409,
+      );
+    }
+    throw error;
+  }
 }

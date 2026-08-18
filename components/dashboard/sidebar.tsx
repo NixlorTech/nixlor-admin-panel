@@ -9,6 +9,8 @@ import {
   Package,
   Handshake,
   UserCog,
+  Server,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NixlorLogo } from "@/components/brand/nixlor-logo";
@@ -18,8 +20,20 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/clients", label: "Clients", icon: Users },
+  {
+    href: "/dashboard/installations",
+    label: "Installations",
+    icon: Server,
+    permission: PERMISSIONS.INSTALLATIONS_READ,
+  },
   { href: "/dashboard/partners", label: "Partners", icon: Handshake },
   { href: "/dashboard/modules", label: "Modules", icon: Package },
+  {
+    href: "/dashboard/audit-logs",
+    label: "Audit Logs",
+    icon: ScrollText,
+    permission: PERMISSIONS.AUDIT_READ,
+  },
   {
     href: "/dashboard/users",
     label: "Users",

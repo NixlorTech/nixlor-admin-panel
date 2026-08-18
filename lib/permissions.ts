@@ -11,6 +11,11 @@ export const PERMISSIONS = {
   MODULES_WRITE: "modules.write",
   LICENSES_GENERATE: "licenses.generate",
   LICENSES_REVOKE: "licenses.revoke",
+  LICENSES_RENEW: "licenses.renew",
+  LICENSES_REBIND_HARDWARE: "licenses.rebind_hardware",
+  INSTALLATIONS_READ: "installations.read",
+  INSTALLATIONS_WRITE: "installations.write",
+  AUDIT_READ: "audit.read",
 } as const;
 
 export type PermissionSlug = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -93,6 +98,36 @@ export const PERMISSION_DEFINITIONS: Array<{
     description: "Revoke active client licenses",
     group: "Licenses",
   },
+  {
+    slug: PERMISSIONS.LICENSES_RENEW,
+    name: "Renew Licenses",
+    description: "Renew existing client licenses",
+    group: "Licenses",
+  },
+  {
+    slug: PERMISSIONS.LICENSES_REBIND_HARDWARE,
+    name: "Rebind Hardware",
+    description: "Reset hardware binding for license reinstalls",
+    group: "Licenses",
+  },
+  {
+    slug: PERMISSIONS.INSTALLATIONS_READ,
+    name: "View Installations",
+    description: "View on-prem installation records and health",
+    group: "Installations",
+  },
+  {
+    slug: PERMISSIONS.INSTALLATIONS_WRITE,
+    name: "Manage Installations",
+    description: "Create and update installation records",
+    group: "Installations",
+  },
+  {
+    slug: PERMISSIONS.AUDIT_READ,
+    name: "View Audit Logs",
+    description: "View immutable admin audit history",
+    group: "Audit",
+  },
 ];
 
 export const ROLE_DEFINITIONS = [
@@ -118,6 +153,10 @@ export const ROLE_DEFINITIONS = [
       PERMISSIONS.MODULES_WRITE,
       PERMISSIONS.LICENSES_GENERATE,
       PERMISSIONS.LICENSES_REVOKE,
+      PERMISSIONS.LICENSES_RENEW,
+      PERMISSIONS.LICENSES_REBIND_HARDWARE,
+      PERMISSIONS.INSTALLATIONS_READ,
+      PERMISSIONS.INSTALLATIONS_WRITE,
     ],
   },
   {

@@ -10,6 +10,14 @@ import { isAccessDenied, verifyAccess } from "@/lib/server/require-auth";
 
 export const dynamic = "force-dynamic";
 
+function toModuleCode(name: string): string {
+  return name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 export async function GET(request: Request) {
   const access = await verifyAccess(PERMISSIONS.MODULES_READ);
   if (isAccessDenied(access)) {
@@ -24,6 +32,7 @@ export async function GET(request: Request) {
     ? {
         OR: [
           { name: { contains: search, mode: "insensitive" } },
+          { code: { contains: search, mode: "insensitive" } },
           { description: { contains: search, mode: "insensitive" } },
         ],
       }
@@ -41,9 +50,11 @@ export async function GET(request: Request) {
 
   const data = modules.map((softwareModule) => ({
     id: softwareModule.id,
+    code: softwareModule.code,
     name: softwareModule.name,
     description: softwareModule.description,
     basePrice: softwareModule.basePrice,
+    status: softwareModule.status,
     createdAt: softwareModule.createdAt.toISOString(),
     updatedAt: softwareModule.updatedAt.toISOString(),
   }));
@@ -55,6 +66,7 @@ export async function GET(request: Request) {
 
 type CreateModuleBody = {
   name: string;
+  code?: string;
   description?: string;
   basePrice?: number;
 };
@@ -77,6 +89,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
+  const code = (body.code?.trim() || toModuleCode(name)).toUpperCase();
+
   const basePrice = body.basePrice ?? 0;
   if (!Number.isFinite(basePrice) || basePrice < 0) {
     return NextResponse.json(
@@ -85,19 +99,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const existing = await prisma.softwareModule.findUnique({
-    where: { name },
+  const existing = await prisma.softwareModule.findFirst({
+    where: {
+      OR: [{ name }, { code }],
+    },
   });
 
   if (existing) {
     return NextResponse.json(
-      { error: "A module with this name already exists" },
+      { error: "A module with this name or code already exists" },
       { status: 409 },
     );
   }
 
   const createdModule = await prisma.softwareModule.create({
     data: {
+      code,
       name,
       description: body.description?.trim() || null,
       basePrice,

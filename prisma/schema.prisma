@@ -13,6 +13,12 @@ enum LicenseStatus {
   EXPIRED
 }
 
+enum ActivationStatus {
+  ISSUED
+  DELIVERED
+  ACTIVATED
+}
+
 enum TransactionType {
   NEW_ISSUANCE
   RENEWAL
@@ -22,6 +28,73 @@ enum TransactionType {
 enum PartnerStatus {
   ACTIVE
   INACTIVE
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ModuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum InstallationStatus {
+  ACTIVE
+  OFFLINE
+  MISMATCH
+  DISABLED
+}
+
+enum LicenseEventType {
+  ISSUED
+  ACTIVATED
+  RENEWED
+  UPGRADED
+  EXTENDED
+  REVOKED
+  REACTIVATED
+  EXPIRED
+  HARDWARE_BOUND
+  HARDWARE_REBOUND
+  HARDWARE_MISMATCH
+  HEARTBEAT_OK
+  HEARTBEAT_FAILED
+  MANUAL_OVERRIDE
+}
+
+enum RevocationReason {
+  PAYMENT_ISSUE
+  FRAUD
+  CUSTOMER_REQUEST
+  SECURITY
+  ADMIN_ACTION
+  CONTRACT_TERMINATED
+}
+
+enum AuditAction {
+  CREATE_CLIENT
+  UPDATE_CLIENT
+  CREATE_PARTNER
+  UPDATE_PARTNER
+  CREATE_MODULE
+  UPDATE_MODULE
+  GENERATE_LICENSE
+  RENEW_LICENSE
+  UPGRADE_LICENSE
+  REVOKE_LICENSE
+  REACTIVATE_LICENSE
+  REBIND_HARDWARE
+  CREATE_INSTALLATION
+  UPDATE_INSTALLATION
+  CHANGE_LICENSE_EXPIRY
+  MANUAL_OVERRIDE
+  CREATE_USER
+  UPDATE_USER
+  CHANGE_USER_ROLE
+  DEACTIVATE_USER
+  REACTIVATE_USER
 }
 
 model AdminRole {
@@ -60,15 +133,18 @@ model RolePermission {
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  name         String?
-  isActive     Boolean   @default(true)
-  roleId       String
-  role         AdminRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now()) @updatedAt
+  id                  String                  @id @default(cuid())
+  email               String                  @unique
+  passwordHash        String
+  name                String?
+  isActive            Boolean                 @default(true)
+  roleId              String
+  role                AdminRole               @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @default(now()) @updatedAt
+  auditLogs           AuditLog[]
+  licenseEvents       LicenseEvent[]
+  hardwareBindingLogs HardwareBindingRecord[]
 
   @@map("admin_users")
 }
@@ -85,50 +161,113 @@ model AlliancePartner {
   clients      Client[]
   transactions LicenseTransaction[]
 
+  @@index([status])
+  @@index([region])
   @@map("alliance_partners")
 }
 
 model SoftwareModule {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          String       @id @default(cuid())
+  code        String?      @unique
+  name        String       @unique
   description String?
-  basePrice   Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  basePrice   Float        @default(0)
+  status      ModuleStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   licenses    License[]
 
+  @@index([status])
   @@map("software_modules")
 }
 
 model Client {
   id                String           @id @default(cuid())
   businessName      String
+  contactPerson     String?
   contactEmail      String
   phone             String?
+  address           String?
+  city              String?
+  district          String?
+  state             String?
   region            String?
+  status            ClientStatus     @default(ACTIVE)
+  notes             String?
   alliancePartnerId String?
   alliancePartner   AlliancePartner? @relation(fields: [alliancePartnerId], references: [id], onDelete: SetNull)
   createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   licenses          License[]
+  installations     Installation[]
 
+  @@index([status])
+  @@index([region])
+  @@index([district])
+  @@index([alliancePartnerId])
   @@map("clients")
+}
+
+model Installation {
+  id                     String             @id @default(cuid())
+  clientId               String
+  client                 Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  installationIdentifier String
+  status                 InstallationStatus @default(ACTIVE)
+  environment            String?
+  hostname               String?
+  hardwareBinding        String?
+  hardwareBindingVersion Int                @default(1)
+  softwareVersion        String?
+  schemaVersion          String?
+  activatedAt            DateTime?
+  lastHeartbeatAt        DateTime?
+  firstSeenAt            DateTime?
+  lastSeenAt             DateTime?
+  heartbeatSequence      BigInt             @default(0)
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  licenses               License[]
+  licenseEvents          LicenseEvent[]
+  hardwareBindingLogs    HardwareBindingRecord[]
+
+  @@unique([clientId, installationIdentifier])
+  @@index([clientId])
+  @@index([status])
+  @@index([lastHeartbeatAt])
+  @@map("installations")
 }
 
 model License {
   id               String               @id @default(cuid())
   clientId         String
   client           Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  installationId   String
+  installation     Installation         @relation(fields: [installationId], references: [id], onDelete: Restrict)
   softwareModuleId String
   softwareModule   SoftwareModule       @relation(fields: [softwareModuleId], references: [id], onDelete: Restrict)
   status           LicenseStatus        @default(ACTIVE)
+  activationStatus ActivationStatus     @default(ISSUED)
   validFrom        DateTime             @default(now())
   expiresAt        DateTime
+  activatedAt      DateTime?
   lastHeartbeatAt  DateTime?
   hardwareId       String?
   latestTokenId    String?
+  revocationReason RevocationReason?
+  revocationNotes  String?
+  rebindCount      Int                  @default(0)
   transactions     LicenseTransaction[]
+  events           LicenseEvent[]
+  hardwareBindings HardwareBindingRecord[]
 
-  @@unique([clientId, softwareModuleId])
+  @@unique([installationId, softwareModuleId])
+  @@index([clientId])
+  @@index([installationId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([lastHeartbeatAt])
   @@map("licenses")
 }
 
@@ -145,7 +284,92 @@ model LicenseTransaction {
   validUntil        DateTime
   alliancePartnerId String?
   alliancePartner   AlliancePartner? @relation(fields: [alliancePartnerId], references: [id], onDelete: SetNull)
+  idempotencyKey    String?          @unique
   createdAt         DateTime         @default(now())
 
+  @@index([licenseId])
+  @@index([alliancePartnerId])
+  @@index([createdAt])
   @@map("license_transactions")
+}
+
+model LicenseEvent {
+  id             String           @id @default(cuid())
+  licenseId      String
+  license        License          @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  installationId String?
+  installation   Installation?    @relation(fields: [installationId], references: [id], onDelete: SetNull)
+  eventType      LicenseEventType
+  actorId        String?
+  actor          AdminUser?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  source         String           @default("system")
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+
+  @@index([licenseId])
+  @@index([installationId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("license_events")
+}
+
+model HardwareBindingRecord {
+  id                  String        @id @default(cuid())
+  licenseId           String
+  license             License       @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  installationId      String?
+  installation        Installation? @relation(fields: [installationId], references: [id], onDelete: SetNull)
+  previousHardwareHash String?
+  newHardwareHash     String?
+  reason              String?
+  actorId             String?
+  actor               AdminUser?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt           DateTime      @default(now())
+
+  @@index([licenseId])
+  @@index([installationId])
+  @@map("hardware_binding_records")
+}
+
+model AuditLog {
+  id         String       @id @default(cuid())
+  actorId    String?
+  actor      AdminUser?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     AuditAction
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  metadata   Json?
+  requestId  String?
+  createdAt  DateTime     @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  operation    String
+  responseBody Json
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int      @default(0)
+  windowStart DateTime
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
 }

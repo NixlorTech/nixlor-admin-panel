@@ -9,8 +9,12 @@
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:verify": "tsx prisma/verify.ts",
+    "test": "tsx --test lib/**/*.test.ts",
+    "test:db:start": "node scripts/test-db.mjs start",
+    "test:db:stop": "node scripts/test-db.mjs stop",
+    "test:integration": "node scripts/test-db.mjs run",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -20,7 +24,6 @@
     "@radix-ui/react-dropdown-menu": "^2.1.24",
     "@radix-ui/react-label": "^2.1.15",
     "@radix-ui/react-select": "^2.3.7",
-    "@radix-ui/react-separator": "^1.1.15",
     "@radix-ui/react-slot": "^1.3.3",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
@@ -37,7 +40,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sonner": "^2.0.8",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
