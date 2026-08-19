@@ -12,10 +12,12 @@ import { execSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config as loadEnv } from "dotenv";
 import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
+loadEnv({ path: resolve(ROOT, ".env") });
 const STATE_FILE = resolve(ROOT, ".test-db-state.json");
 const DOCKER_URL =
   "postgresql://nixlor_test:nixlor_test@localhost:5433/nixlor_test?schema=public";

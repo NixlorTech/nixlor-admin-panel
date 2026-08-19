@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, createPublicKey } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -29,6 +29,15 @@ export function ensureTestEnv() {
     process.env.LICENSE_RSA_PRIVATE_KEY = privateKey
       .export({ type: "pkcs8", format: "pem" })
       .toString();
+    process.env.LICENSE_RSA_PUBLIC_KEY = publicKey
+      .export({ type: "spki", format: "pem" })
+      .toString();
+  } else if (!process.env.LICENSE_RSA_PUBLIC_KEY) {
+    const privateKeyPem = process.env.LICENSE_RSA_PRIVATE_KEY.replace(
+      /\\n/g,
+      "\n",
+    );
+    const publicKey = createPublicKey(privateKeyPem);
     process.env.LICENSE_RSA_PUBLIC_KEY = publicKey
       .export({ type: "spki", format: "pem" })
       .toString();
